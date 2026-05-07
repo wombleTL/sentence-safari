@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentence Safari 🌿</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --simple: #FF6B6B;
+    --compound: #4ECDC4;
+    --complex: #FFE66D;
+    --bg: #1a1a2e;
+    --card: #16213e;
+    --text: #eaeaea;
+    --muted: #8899aa;
+    --correct: #6bcb77;
+    --wrong: #ff6b6b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  header {
+    text-align: center;
+    padding: 2.5rem 1rem 1.5rem;
+  }
+  header h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2.2rem, 6vw, 4rem);
+    background: linear-gradient(135deg, var(--simple), var(--compound), var(--complex));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header p { margin-top: .4rem; color: var(--muted); font-size: 1rem; font-weight: 600; }
+
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: .6rem;
+    flex-wrap: wrap;
+    padding: 1rem 1rem 0;
+  }
+  .tab {
+    padding: .55rem 1.4rem;
+    border-radius: 50px;
+    border: 2.5px solid #555;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all .25s;
+    background: var(--card);
+    color: var(--muted);
+  }
+  .tab.active[data-tab="learn"]    { background: var(--simple);   color: #fff; border-color: var(--simple); }
+  .tab.active[data-tab="classify"] { background: var(--compound); color: #fff; border-color: var(--compound); }
+  .tab.active[data-tab="drag"]     { background: #f97316;         color: #fff; border-color: #f97316; }
+  .tab.active[data-tab="quiz"]     { background: #a78bfa;         color: #fff; border-color: #a78bfa; }
+
+  .section { display: none; padding: 1.8rem 1rem 3rem; max-width: 880px; margin: 0 auto; }
+  .section.active { display: block; }
+
+  /* ---- LEARN ---- */
+  .learn-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.2rem;
+    margin-top: 1rem;
+  }
+  .type-card { border-radius: 18px; padding: 1.6rem 1.4rem; }
+  .type-card.simple  { background: linear-gradient(135deg,#ff6b6b18,#ff6b6b38); border: 2px solid var(--simple); }
+  .type-card.compound{ background: linear-gradient(135deg,#4ecdc418,#4ecdc438); border: 2px solid var(--compound); }
+  .type-card.complex { background: linear-gradient(135deg,#ffe66d18,#ffe66d38); border: 2px solid var(--complex); }
+
+  .badge {
+    display: inline-block;
+    font-family: 'Fredoka One', cursive;
+    font-size: .85rem;
+    padding: .2rem .8rem;
+    border-radius: 50px;
+    margin-bottom: .7rem;
+  }
+  .simple .badge  { background: var(--simple);  color: #fff; }
+  .compound .badge{ background: var(--compound); color: #fff; }
+  .complex .badge { background: var(--complex);  color: #1a1a2e; }
+
+  .type-card h2 { font-family: 'Fredoka One', cursive; font-size: 1.4rem; margin-bottom: .5rem; }
+  .simple h2  { color: var(--simple); }
+  .compound h2{ color: var(--compound); }
+  .complex h2 { color: var(--complex); }
+
+  .type-card p { font-size: .9rem; color: var(--muted); line-height: 1.6; margin-bottom: .8rem; }
+  .formula { background: #ffffff12; border-radius: 10px; padding: .5rem .9rem; font-size: .82rem; font-weight: 700; font-family: monospace; margin-bottom: .9rem; }
+  .examples-list { list-style: none; }
+  .examples-list li { font-size: .88rem; padding: .35rem 0; border-bottom: 1px solid #ffffff10; line-height: 1.5; }
+  .examples-list li:last-child { border-bottom: none; }
+  .examples-list li::before { content: '→ '; opacity: .5; }
+
+  .connectors-box { margin-top: 1.2rem; background: #ffffff08; border-radius: 12px; padding: 1rem 1.2rem; }
+  .connectors-box h3 { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: .5rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .chip { padding: .25rem .7rem; border-radius: 50px; font-size: .78rem; font-weight: 700; background: #ffffff15; color: var(--text); }
+  .chip.coord { background: #4ecdc430; color: var(--compound); }
+  .chip.sub   { background: #a78bfa30; color: #a78bfa; }
+
+  /* ---- CLASSIFY ---- */
+  .intro { text-align: center; color: var(--muted); margin-bottom: 1.4rem; font-size: .95rem; }
+  .classify-score { text-align: center; font-family: 'Fredoka One', cursive; font-size: 1.1rem; color: var(--muted); margin-bottom: 1rem; }
+  .classify-score span { color: var(--correct); font-size: 1.3rem; }
+
+  .sentence-card { background: var(--card); border-radius: 16px; padding: 1.4rem 1.6rem; margin-bottom: 1rem; border: 2px solid #ffffff10; transition: border-color .3s; }
+  .sentence-card.correct-simple   { border-color: var(--simple);  background: #ff6b6b12; }
+  .sentence-card.correct-compound { border-color: var(--compound); background: #4ecdc412; }
+  .sentence-card.correct-complex  { border-color: var(--complex);  background: #ffe66d12; }
+  .sentence-card.wrong            { border-color: var(--wrong); animation: shake .3s; }
+
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+  .sentence-text { font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem; line-height: 1.5; }
+  .choice-btns { display: flex; gap: .6rem; flex-wrap: wrap; }
+  .choice-btn {
+    padding: .45rem 1.1rem; border-radius: 50px; border: 2px solid;
+    font-family: 'Fredoka One', cursive; font-size: .9rem; cursor: pointer;
+    transition: all .2s; background: transparent;
+  }
+  .choice-btn.simple  { border-color: var(--simple);  color: var(--simple); }
+  .choice-btn.compound{ border-color: var(--compound); color: var(--compound); }
+  .choice-btn.complex { border-color: var(--complex);  color: var(--complex); }
+  .choice-btn:hover.simple  { background: var(--simple);  color: #fff; }
+  .choice-btn:hover.compound{ background: var(--compound); color: #fff; }
+  .choice-btn:hover.complex { background: var(--complex);  color: #1a1a2e; }
+  .choice-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .feedback { display: none; margin-top: .7rem; font-size: .88rem; font-weight: 700; padding: .4rem .8rem; border-radius: 8px; }
+  .feedback.show { display: block; }
+  .feedback.correct   { background: #6bcb7730; color: var(--correct); }
+  .feedback.incorrect { background: #ff6b6b30; color: var(--wrong); }
+
+  .reset-btn {
+    display: block; margin: 1.5rem auto 0;
+    padding: .65rem 2rem; border-radius: 50px; border: none;
+    background: linear-gradient(135deg, var(--simple), var(--compound));
+    color: #fff; font-family: 'Fredoka One', cursive; font-size: 1rem;
+    cursor: pointer; transition: transform .2s, box-shadow .2s;
+    box-shadow: 0 4px 20px #4ecdc430;
+  }
+  .reset-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px #4ecdc450; }
+
+  /* ---- DRAG & DROP ---- */
+  #drag .drag-intro { text-align: center; color: var(--muted); margin-bottom: .5rem; font-size: .95rem; }
+  #drag .drag-score-row { text-align: center; font-family: 'Fredoka One', cursive; font-size: 1.1rem; color: var(--muted); margin-bottom: 1.4rem; }
+  #drag .drag-score-row span { color: #f97316; font-size: 1.3rem; }
+
+  /* Word bank */
+  .word-bank-label { font-family: 'Fredoka One', cursive; font-size: .85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: .6rem; }
+  .word-bank {
+    display: flex; flex-wrap: wrap; gap: .5rem;
+    background: #0f3460; border-radius: 16px; padding: 1rem 1.2rem;
+    min-height: 56px; margin-bottom: 1.8rem;
+    border: 2px dashed #ffffff20;
+  }
+
+  /* draggable word chip */
+  .word-chip {
+    padding: .4rem 1rem; border-radius: 50px;
+    font-family: 'Fredoka One', cursive; font-size: .92rem;
+    cursor: grab; user-select: none;
+    transition: transform .15s, box-shadow .15s, opacity .2s;
+    background: #1a1a2e; border: 2px solid #ffffff25; color: var(--text);
+  }
+  .word-chip:active { cursor: grabbing; }
+  .word-chip.dragging { opacity: .4; transform: scale(.95); }
+  .word-chip.placed   { opacity: .35; cursor: default; pointer-events: none; }
+
+  /* sentence builder row */
+  .drag-task {
+    background: var(--card); border-radius: 16px;
+    padding: 1.3rem 1.5rem; margin-bottom: 1.1rem;
+    border: 2px solid #ffffff10; transition: border-color .3s;
+  }
+  .drag-task.success-simple   { border-color: var(--simple);  background: #ff6b6b12; }
+  .drag-task.success-compound { border-color: var(--compound); background: #4ecdc412; }
+  .drag-task.success-complex  { border-color: var(--complex);  background: #ffe66d12; }
+  .drag-task.fail { border-color: var(--wrong); animation: shake .3s; }
+
+  .drag-task-label {
+    font-size: .72rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 1.5px; margin-bottom: .4rem;
+  }
+  .drag-task.simple-task   .drag-task-label { color: var(--simple); }
+  .drag-task.compound-task .drag-task-label { color: var(--compound); }
+  .drag-task.complex-task  .drag-task-label { color: var(--complex); }
+
+  .drag-task-prompt { font-size: .92rem; color: var(--muted); margin-bottom: .8rem; line-height: 1.5; }
+
+  /* drop zone — the sentence with a blank */
+  .drop-zone-row { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; font-size: 1rem; font-weight: 700; line-height: 2; }
+  .drop-zone-row .word { color: var(--text); }
+
+  .drop-slot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 110px; height: 36px; border-radius: 10px;
+    border: 2.5px dashed #ffffff30; background: #ffffff08;
+    font-family: 'Fredoka One', cursive; font-size: .88rem;
+    color: #ffffff40; transition: all .2s; padding: 0 .6rem;
+    cursor: default;
+  }
+  .drop-slot.over { border-color: #f97316; background: #f9731620; color: #f97316; }
+  .drop-slot.filled { border-style: solid; border-color: #f9731660; background: #f9731618; color: var(--text); cursor: pointer; }
+  .drop-slot.filled:hover { background: #ff6b6b20; border-color: var(--wrong); }
+
+  .drag-feedback { display: none; margin-top: .65rem; font-size: .87rem; font-weight: 700; padding: .35rem .8rem; border-radius: 8px; }
+  .drag-feedback.show { display: block; }
+  .drag-feedback.ok   { background: #6bcb7730; color: var(--correct); }
+  .drag-feedback.bad  { background: #ff6b6b30; color: var(--wrong); }
+
+  .check-drag-btn {
+    margin-top: .7rem; padding: .42rem 1.2rem; border-radius: 50px; border: none;
+    font-family: 'Fredoka One', cursive; font-size: .88rem; cursor: pointer;
+    background: #f97316; color: #fff; transition: all .2s;
+  }
+  .check-drag-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+  .check-drag-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* touch ghost */
+  .touch-ghost {
+    position: fixed; pointer-events: none; z-index: 9999;
+    font-family: 'Fredoka One', cursive; font-size: .92rem;
+    padding: .4rem 1rem; border-radius: 50px;
+    background: #f97316; color: #fff;
+    box-shadow: 0 4px 20px #f9731660;
+    transform: translate(-50%, -50%);
+    display: none;
+  }
+
+  /* ---- QUIZ ---- */
+  #quiz { text-align: center; }
+  .quiz-box { background: var(--card); border-radius: 20px; padding: 2rem 1.8rem; max-width: 600px; margin: 0 auto; }
+  .quiz-progress { font-size: .8rem; color: var(--muted); margin-bottom: .8rem; font-weight: 700; }
+  .progress-bar-wrap { background: #ffffff10; border-radius: 50px; height: 6px; margin-bottom: 1.4rem; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 50px; background: linear-gradient(90deg,var(--simple),var(--compound),#a78bfa); transition: width .4s; }
+  .quiz-sentence { font-size: 1.15rem; font-style: italic; background: #ffffff08; border-radius: 12px; padding: .8rem 1rem; margin-bottom: 1.3rem; line-height: 1.6; }
+  .quiz-question { font-size: 1.05rem; font-weight: 700; margin-bottom: .5rem; line-height: 1.5; }
+  .quiz-options { display: flex; flex-direction: column; gap: .6rem; }
+  .quiz-opt {
+    padding: .7rem 1.2rem; border-radius: 12px; border: 2px solid #ffffff20;
+    background: #ffffff08; color: var(--text); font-family: 'Nunito', sans-serif;
+    font-weight: 700; font-size: .95rem; cursor: pointer; text-align: left; transition: all .2s;
+  }
+  .quiz-opt:hover:not(:disabled) { border-color: #a78bfa; background: #a78bfa15; }
+  .quiz-opt.correct { border-color: var(--correct); background: #6bcb7725; color: var(--correct); }
+  .quiz-opt.wrong   { border-color: var(--wrong);   background: #ff6b6b25; color: var(--wrong); }
+  .quiz-opt:disabled { cursor: not-allowed; }
+  .quiz-explanation { display: none; margin-top: 1rem; padding: .7rem 1rem; border-radius: 10px; background: #ffffff08; font-size: .88rem; color: var(--muted); line-height: 1.5; text-align: left; }
+  .quiz-explanation.show { display: block; }
+  .next-btn { margin-top: 1.2rem; padding: .6rem 2rem; border-radius: 50px; border: none; background: #a78bfa; color: #fff; font-family: 'Fredoka One', cursive; font-size: 1rem; cursor: pointer; display: none; box-shadow: 0 4px 18px #a78bfa40; transition: all .2s; }
+  .next-btn.show { display: inline-block; }
+  .next-btn:hover { transform: translateY(-2px); }
+  .quiz-result { display: none; text-align: center; padding: 2rem; }
+  .quiz-result.show { display: block; }
+  .result-emoji { font-size: 4rem; margin-bottom: .5rem; }
+  .result-score { font-family: 'Fredoka One', cursive; font-size: 2.5rem; background: linear-gradient(135deg,var(--simple),var(--compound),#a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .result-msg { color: var(--muted); margin: .5rem 0 1.5rem; font-size: .95rem; }
+
+  footer { text-align: center; padding: 1.5rem; color: #ffffff20; font-size: .78rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌿 Sentence Safari</h1>
+  <p>Explore Simple, Compound &amp; Complex Sentences</p>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="learn">📚 Learn</button>
+  <button class="tab" data-tab="classify">🔍 Classify</button>
+  <button class="tab" data-tab="drag">🧩 Drag &amp; Drop</button>
+  <button class="tab" data-tab="quiz">🏆 Quiz</button>
+</nav>
+
+<!-- ======================== LEARN ======================== -->
+<section class="section active" id="learn">
+  <div class="learn-grid">
+    <div class="type-card simple">
+      <span class="badge">Type 1</span>
+      <h2>Simple Sentence</h2>
+      <p>One independent clause with a subject and predicate. It expresses one complete thought.</p>
+      <div class="formula">Subject + Verb (+ Object)</div>
+      <ul class="examples-list">
+        <li>The dog barked loudly.</li>
+        <li>She runs every morning.</li>
+        <li>Tom and Lisa love pizza.</li>
+        <li>The children played in the park.</li>
+      </ul>
+      <div class="connectors-box">
+        <h3>Key Features</h3>
+        <div class="chips">
+          <span class="chip">1 subject</span><span class="chip">1 verb</span>
+          <span class="chip">1 idea</span><span class="chip">no joining words</span>
+        </div>
+      </div>
+    </div>
+    <div class="type-card compound">
+      <span class="badge">Type 2</span>
+      <h2>Compound Sentence</h2>
+      <p>Two independent clauses joined by a coordinating conjunction or semicolon.</p>
+      <div class="formula">Clause + FANBOYS + Clause</div>
+      <ul class="examples-list">
+        <li>I was tired, but I kept going.</li>
+        <li>She studied hard, so she passed.</li>
+        <li>He likes tea; she prefers coffee.</li>
+        <li>We ran fast, yet we missed the bus.</li>
+      </ul>
+      <div class="connectors-box">
+        <h3>FANBOYS Conjunctions</h3>
+        <div class="chips">
+          <span class="chip coord">for</span><span class="chip coord">and</span>
+          <span class="chip coord">nor</span><span class="chip coord">but</span>
+          <span class="chip coord">or</span><span class="chip coord">yet</span>
+          <span class="chip coord">so</span>
+        </div>
+      </div>
+    </div>
+    <div class="type-card complex">
+      <span class="badge">Type 3</span>
+      <h2>Complex Sentence</h2>
+      <p>One independent clause plus a dependent clause joined by a subordinating conjunction.</p>
+      <div class="formula">Main Clause + Subordinator + Dependent Clause</div>
+      <ul class="examples-list">
+        <li>Because it rained, we stayed inside.</li>
+        <li>She left before the show ended.</li>
+        <li>Although he tried, he couldn't win.</li>
+        <li>When I grow up, I want to travel.</li>
+      </ul>
+      <div class="connectors-box">
+        <h3>Subordinating Conjunctions</h3>
+        <div class="chips">
+          <span class="chip sub">because</span><span class="chip sub">although</span>
+          <span class="chip sub">when</span><span class="chip sub">while</span>
+          <span class="chip sub">if</span><span class="chip sub">since</span>
+          <span class="chip sub">after</span><span class="chip sub">before</span>
+          <span class="chip sub">unless</span><span class="chip sub">until</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================== CLASSIFY ======================== -->
+<section class="section" id="classify">
+  <p class="intro">Read each sentence and choose its type. Can you get them all right?</p>
+  <div class="classify-score">Score: <span id="classify-score">0</span> / <span id="classify-total">0</span></div>
+  <div id="classify-list"></div>
+  <button class="reset-btn" onclick="resetClassify()">🔄 Reset Activity</button>
+</section>
+
+<!-- ======================== DRAG & DROP ======================== -->
+<section class="section" id="drag">
+  <p class="drag-intro">Drag the missing word into the correct gap to complete each sentence.</p>
+  <div class="drag-score-row">Completed: <span id="drag-score">0</span> / <span id="drag-total">0</span></div>
+
+  <div class="word-bank-label">🗂 Word Bank — drag a word into a gap</div>
+  <div class="word-bank" id="word-bank"></div>
+
+  <div id="drag-list"></div>
+  <button class="reset-btn" style="background: linear-gradient(135deg,#f97316,#fbbf24); box-shadow: 0 4px 20px #f9731640;" onclick="resetDrag()">🔄 Reset Activity</button>
+</section>
+
+<!-- ======================== QUIZ ======================== -->
+<section class="section" id="quiz">
+  <p class="intro">Test your knowledge! Answer 10 questions.</p>
+  <div class="quiz-box">
+    <div id="quiz-inner">
+      <div class="quiz-progress" id="quiz-progress">Question 1 of 10</div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="quiz-bar" style="width:10%"></div></div>
+      <div class="quiz-question">What type of sentence is this?</div>
+      <div class="quiz-sentence" id="quiz-sent"></div>
+      <div class="quiz-options" id="quiz-opts"></div>
+      <div class="quiz-explanation" id="quiz-exp"></div>
+      <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next →</button>
+    </div>
+    <div class="quiz-result" id="quiz-result">
+      <div class="result-emoji" id="result-emoji">🏆</div>
+      <div class="result-score" id="result-score"></div>
+      <div class="result-msg" id="result-msg"></div>
+      <button class="reset-btn" onclick="startQuiz()">🔄 Play Again</button>
+    </div>
+  </div>
+</section>
+
+<div class="touch-ghost" id="touch-ghost"></div>
+<footer>Sentence Safari · Built for learners everywhere 🌿</footer>
+
+<script>
+// ===== TABS =====
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ===== CLASSIFY DATA =====
+const classifyData = [
+  { sentence: "The cat sat on the mat.", type: "simple", hint: "One subject (The cat), one verb (sat) — a single complete thought." },
+  { sentence: "I wanted to go, but it was raining.", type: "compound", hint: "Two independent clauses joined by 'but' (a FANBOYS conjunction)." },
+  { sentence: "Because she studied hard, she passed the test.", type: "complex", hint: "'Because' is a subordinating conjunction — it creates a dependent clause." },
+  { sentence: "The birds sang beautifully in the trees.", type: "simple", hint: "One subject, one verb, one idea." },
+  { sentence: "He was hungry, so he made a sandwich.", type: "compound", hint: "'So' is a coordinating conjunction joining two complete thoughts." },
+  { sentence: "Although it was cold, they went swimming.", type: "complex", hint: "'Although' introduces a dependent clause." },
+  { sentence: "My sister and I love to read books.", type: "simple", hint: "Two subjects sharing one verb — still just one clause!" },
+  { sentence: "She wanted tea, yet he preferred coffee.", type: "compound", hint: "'Yet' is a FANBOYS conjunction." },
+  { sentence: "When the bell rang, the students ran outside.", type: "complex", hint: "'When' is a subordinating conjunction." },
+  { sentence: "The moon shone brightly over the sea.", type: "simple", hint: "One complete thought — subject, verb, detail." },
+  { sentence: "I wanted to stay, and she wanted to leave.", type: "compound", hint: "'And' joins two independent clauses." },
+  { sentence: "She left the room before I could say goodbye.", type: "complex", hint: "'Before' creates a dependent clause." },
+];
+
+let classifyScore = 0, classifyAnswered = 0;
+
+function buildClassify() {
+  const c = document.getElementById('classify-list');
+  c.innerHTML = '';
+  classifyScore = classifyAnswered = 0;
+  updateClassifyScore();
+  classifyData.forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'sentence-card';
+    card.id = `ccard-${i}`;
+    card.innerHTML = `
+      <div class="sentence-text">"${item.sentence}"</div>
+      <div class="choice-btns">
+        <button class="choice-btn simple"   onclick="checkClassify(${i},'simple')">Simple</button>
+        <button class="choice-btn compound" onclick="checkClassify(${i},'compound')">Compound</button>
+        <button class="choice-btn complex"  onclick="checkClassify(${i},'complex')">Complex</button>
+      </div>
+      <div class="feedback" id="cfb-${i}"></div>`;
+    c.appendChild(card);
+  });
+}
+
+function checkClassify(i, chosen) {
+  const item = classifyData[i];
+  const card = document.getElementById(`ccard-${i}`);
+  const fb = document.getElementById(`cfb-${i}`);
+  card.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+  classifyAnswered++;
+  if (chosen === item.type) {
+    classifyScore++;
+    card.classList.add(`correct-${item.type}`);
+    fb.className = 'feedback show correct';
+    fb.textContent = `✅ Correct! ${item.hint}`;
+  } else {
+    card.classList.add('wrong');
+    fb.className = 'feedback show incorrect';
+    fb.textContent = `❌ It's a ${item.type} sentence. ${item.hint}`;
+  }
+  updateClassifyScore();
+}
+function updateClassifyScore() {
+  document.getElementById('classify-score').textContent = classifyScore;
+  document.getElementById('classify-total').textContent = classifyAnswered;
+}
+function resetClassify() { buildClassify(); }
+buildClassify();
+
+// ===== DRAG & DROP DATA =====
+// Each task: sentence with ONE blank marked as ___ANSWER___
+// The answer word is dragged from the bank.
+const dragData = [
+  {
+    type: 'simple',
+    typeClass: 'simple-task',
+    prompt: 'Complete this SIMPLE sentence with the correct verb:',
+    before: 'The little fox',
+    blank: 'leaped',
+    after: 'over the fence.',
+    hint: 'A simple sentence needs just a subject and a verb — "leaped" completes the one action.'
+  },
+  {
+    type: 'compound',
+    typeClass: 'compound-task',
+    prompt: 'Choose the FANBOYS conjunction to make a COMPOUND sentence:',
+    before: 'I love reading,',
+    blank: 'but',
+    after: 'my brother prefers watching TV.',
+    hint: '"But" is a coordinating conjunction (FANBOYS) that joins two independent clauses.'
+  },
+  {
+    type: 'complex',
+    typeClass: 'complex-task',
+    prompt: 'Pick the subordinating conjunction to make a COMPLEX sentence:',
+    before: '',
+    blank: 'Because',
+    after: 'it was raining, we stayed indoors.',
+    hint: '"Because" is a subordinating conjunction that introduces the dependent clause.'
+  },
+  {
+    type: 'simple',
+    typeClass: 'simple-task',
+    prompt: 'Add the missing subject to complete this SIMPLE sentence:',
+    before: '',
+    blank: 'The astronaut',
+    after: 'floated silently in space.',
+    hint: 'A simple sentence needs exactly one subject — "The astronaut" is the doer of the action.'
+  },
+  {
+    type: 'compound',
+    typeClass: 'compound-task',
+    prompt: 'Choose the correct FANBOYS word for this COMPOUND sentence:',
+    before: 'She was exhausted,',
+    blank: 'yet',
+    after: 'she kept on running.',
+    hint: '"Yet" is a coordinating conjunction showing contrast between two independent clauses.'
+  },
+  {
+    type: 'complex',
+    typeClass: 'complex-task',
+    prompt: 'Pick the subordinator to create a COMPLEX sentence:',
+    before: 'He always checks the weather',
+    blank: 'before',
+    after: 'he leaves the house.',
+    hint: '"Before" is a subordinating conjunction making the second clause dependent.'
+  },
+  {
+    type: 'simple',
+    typeClass: 'simple-task',
+    prompt: 'Complete the SIMPLE sentence with the right word:',
+    before: 'The golden retriever',
+    blank: 'chased',
+    after: 'the ball across the yard.',
+    hint: '"Chased" is the single verb that completes this simple one-idea sentence.'
+  },
+  {
+    type: 'compound',
+    typeClass: 'compound-task',
+    prompt: 'Which FANBOYS conjunction completes this COMPOUND sentence?',
+    before: 'We could go to the beach,',
+    blank: 'or',
+    after: 'we could visit the museum.',
+    hint: '"Or" offers a choice between two independent clauses — classic compound structure.'
+  },
+  {
+    type: 'complex',
+    typeClass: 'complex-task',
+    prompt: 'Drag the subordinating conjunction into the gap:',
+    before: '',
+    blank: 'Although',
+    after: 'the test was difficult, she finished early.',
+    hint: '"Although" introduces the dependent clause, showing contrast with the main clause.'
+  },
+  {
+    type: 'compound',
+    typeClass: 'compound-task',
+    prompt: 'Add the missing FANBOYS word to join these two clauses:',
+    before: 'He forgot his homework,',
+    blank: 'so',
+    after: 'he had to stay in at lunch.',
+    hint: '"So" shows cause and effect — a classic coordinating conjunction.'
+  },
+];
+
+// Collect all answers for the word bank
+let dragState = []; // { answered, correct }
+let dragScoreCount = 0;
+
+function buildDrag() {
+  dragScoreCount = 0;
+  dragState = dragData.map(() => ({ answered: false, correct: false }));
+  updateDragScore();
+
+  // Build word bank — shuffle answers
+  const bank = document.getElementById('word-bank');
+  bank.innerHTML = '';
+  const answers = dragData.map((d, i) => ({ word: d.blank, idx: i }));
+  shuffleArr(answers).forEach(({ word, idx }) => {
+    const chip = document.createElement('div');
+    chip.className = 'word-chip';
+    chip.textContent = word;
+    chip.dataset.answer = word;
+    chip.dataset.taskIdx = idx;
+    chip.id = `chip-${idx}`;
+    setupDrag(chip);
+    bank.appendChild(chip);
+  });
+
+  // Build task cards
+  const list = document.getElementById('drag-list');
+  list.innerHTML = '';
+  dragData.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = `drag-task ${item.typeClass}`;
+    div.id = `dtask-${i}`;
+
+    const labelText = item.type.charAt(0).toUpperCase() + item.type.slice(1);
+    const beforeHTML = item.before ? `<span class="word">${item.before}</span>` : '';
+    const afterHTML  = item.after  ? `<span class="word">${item.after}</span>`  : '';
+
+    div.innerHTML = `
+      <div class="drag-task-label">${labelText} Sentence</div>
+      <div class="drag-task-prompt">${item.prompt}</div>
+      <div class="drop-zone-row">
+        ${beforeHTML}
+        <div class="drop-slot" id="slot-${i}" data-task="${i}">drop here</div>
+        ${afterHTML}
+      </div>
+      <div class="drag-feedback" id="dfb-${i}"></div>
+      <button class="check-drag-btn" id="dcheck-${i}" onclick="checkDrag(${i})" disabled>Check ✓</button>
+    `;
+    list.appendChild(div);
+    setupDropSlot(document.getElementById(`slot-${i}`));
+  });
+}
+
+function setupDropSlot(slot) {
+  slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('over'); });
+  slot.addEventListener('dragleave', () => slot.classList.remove('over'));
+  slot.addEventListener('drop', e => {
+    e.preventDefault();
+    slot.classList.remove('over');
+    const taskIdx = parseInt(e.dataTransfer.getData('taskIdx'));
+    const word = e.dataTransfer.getData('word');
+    dropWordIntoSlot(slot, word, taskIdx);
+  });
+  // touch drop handled centrally
+}
+
+function dropWordIntoSlot(slot, word, chipTaskIdx) {
+  const slotTaskIdx = parseInt(slot.dataset.task);
+  if (dragState[slotTaskIdx].answered) return;
+
+  // Return any existing chip in this slot back to bank
+  if (slot.dataset.currentChip !== undefined && slot.dataset.currentChip !== '') {
+    const prevChipIdx = parseInt(slot.dataset.currentChip);
+    const prevChip = document.getElementById(`chip-${prevChipIdx}`);
+    if (prevChip) prevChip.classList.remove('placed');
+  }
+
+  // Place new chip
+  slot.textContent = word;
+  slot.classList.add('filled');
+  slot.dataset.word = word;
+  slot.dataset.currentChip = chipTaskIdx;
+  slot.title = 'Click to return to bank';
+
+  // Mark chip as placed
+  const chip = document.getElementById(`chip-${chipTaskIdx}`);
+  if (chip) chip.classList.add('placed');
+
+  // Enable check button
+  document.getElementById(`dcheck-${slotTaskIdx}`).disabled = false;
+
+  // Click slot to return
+  slot.onclick = () => {
+    if (dragState[slotTaskIdx].answered) return;
+    chip.classList.remove('placed');
+    slot.textContent = 'drop here';
+    slot.classList.remove('filled');
+    slot.dataset.word = '';
+    slot.dataset.currentChip = '';
+    slot.onclick = null;
+    document.getElementById(`dcheck-${slotTaskIdx}`).disabled = true;
+  };
+}
+
+let draggedChip = null;
+
+function setupDrag(chip) {
+  // Mouse drag
+  chip.setAttribute('draggable', true);
+  chip.addEventListener('dragstart', e => {
+    if (chip.classList.contains('placed')) { e.preventDefault(); return; }
+    draggedChip = chip;
+    chip.classList.add('dragging');
+    e.dataTransfer.setData('word', chip.dataset.answer);
+    e.dataTransfer.setData('taskIdx', chip.dataset.taskIdx);
+  });
+  chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+
+  // Touch drag
+  chip.addEventListener('touchstart', touchStart, { passive: false });
+  chip.addEventListener('touchmove',  touchMove,  { passive: false });
+  chip.addEventListener('touchend',   touchEnd,   { passive: false });
+}
+
+let touchChip = null, touchGhost = document.getElementById('touch-ghost');
+let touchOffX = 0, touchOffY = 0;
+
+function touchStart(e) {
+  const chip = e.currentTarget;
+  if (chip.classList.contains('placed')) return;
+  e.preventDefault();
+  touchChip = chip;
+  const t = e.touches[0];
+  const rect = chip.getBoundingClientRect();
+  touchOffX = t.clientX - rect.left - rect.width / 2;
+  touchOffY = t.clientY - rect.top  - rect.height / 2;
+  touchGhost.textContent = chip.dataset.answer;
+  touchGhost.style.display = 'block';
+  touchGhost.style.left = t.clientX + 'px';
+  touchGhost.style.top  = t.clientY + 'px';
+  chip.classList.add('dragging');
+}
+function touchMove(e) {
+  if (!touchChip) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  touchGhost.style.left = t.clientX + 'px';
+  touchGhost.style.top  = t.clientY + 'px';
+  // highlight slots
+  document.querySelectorAll('.drop-slot').forEach(s => {
+    const r = s.getBoundingClientRect();
+    if (t.clientX >= r.left && t.clientX <= r.right && t.clientY >= r.top && t.clientY <= r.bottom) {
+      s.classList.add('over');
+    } else {
+      s.classList.remove('over');
+    }
+  });
+}
+function touchEnd(e) {
+  if (!touchChip) return;
+  e.preventDefault();
+  touchGhost.style.display = 'none';
+  touchChip.classList.remove('dragging');
+  const t = e.changedTouches[0];
+  document.querySelectorAll('.drop-slot').forEach(s => {
+    s.classList.remove('over');
+    const r = s.getBoundingClientRect();
+    if (t.clientX >= r.left && t.clientX <= r.right && t.clientY >= r.top && t.clientY <= r.bottom) {
+      dropWordIntoSlot(s, touchChip.dataset.answer, parseInt(touchChip.dataset.taskIdx));
+    }
+  });
+  touchChip = null;
+}
+
+function checkDrag(i) {
+  const item = dragData[i];
+  const slot = document.getElementById(`slot-${i}`);
+  const fb   = document.getElementById(`dfb-${i}`);
+  const task = document.getElementById(`dtask-${i}`);
+  const btn  = document.getElementById(`dcheck-${i}`);
+  const placed = slot.dataset.word;
+
+  dragState[i].answered = true;
+  btn.disabled = true;
+  slot.onclick = null;
+
+  if (placed === item.blank) {
+    dragState[i].correct = true;
+    dragScoreCount++;
+    task.classList.add(`success-${item.type}`);
+    fb.className = 'drag-feedback show ok';
+    fb.textContent = `✅ Correct! ${item.hint}`;
+    // lock chip permanently placed
+    const chip = document.getElementById(`chip-${parseInt(slot.dataset.currentChip)}`);
+    if (chip) chip.classList.add('placed');
+  } else {
+    task.classList.add('fail');
+    fb.className = 'drag-feedback show bad';
+    fb.textContent = `❌ Not quite! The correct word was "${item.blank}". ${item.hint}`;
+    // return chip to bank
+    const chipIdx = parseInt(slot.dataset.currentChip);
+    const chip = document.getElementById(`chip-${chipIdx}`);
+    if (chip) chip.classList.remove('placed');
+    slot.textContent = item.blank;
+    slot.classList.add('filled');
+    slot.style.borderColor = '#6bcb77';
+    slot.style.color = 'var(--correct)';
+  }
+  updateDragScore();
+}
+
+function updateDragScore() {
+  document.getElementById('drag-score').textContent = dragScoreCount;
+  document.getElementById('drag-total').textContent = dragData.length;
+}
+function resetDrag() { buildDrag(); }
+
+function shuffleArr(arr) { return [...arr].sort(() => Math.random() - .5); }
+buildDrag();
+
+// ===== QUIZ =====
+const quizData = [
+  { sentence: "The sun rises in the east.", type: "Simple", explanation: "One subject (The sun), one verb (rises) — a single complete thought." },
+  { sentence: "I was tired, but I kept reading.", type: "Compound", explanation: "'But' is a FANBOYS conjunction joining two independent clauses." },
+  { sentence: "If you study hard, you will succeed.", type: "Complex", explanation: "'If' is a subordinating conjunction — 'If you study hard' is a dependent clause." },
+  { sentence: "She likes cats and dogs.", type: "Simple", explanation: "Two objects share one verb — still just one clause." },
+  { sentence: "He tried his best, yet he failed.", type: "Compound", explanation: "'Yet' joins two independent clauses." },
+  { sentence: "While Mia was cooking, the phone rang.", type: "Complex", explanation: "'While' is a subordinating conjunction creating a dependent clause." },
+  { sentence: "The children played happily all afternoon.", type: "Simple", explanation: "One subject, one verb, one idea." },
+  { sentence: "I love music, and she loves art.", type: "Compound", explanation: "'And' connects two independent clauses." },
+  { sentence: "After the storm passed, the rainbow appeared.", type: "Complex", explanation: "'After' is a subordinating conjunction — 'After the storm passed' cannot stand alone." },
+  { sentence: "She opened the door and smiled.", type: "Simple", explanation: "One subject (She) with two verbs — still one clause!" },
+  { sentence: "I was nervous, for it was my first day.", type: "Compound", explanation: "'For' is a coordinating conjunction (FANBOYS) joining two full ideas." },
+  { sentence: "Unless you hurry, we will miss the train.", type: "Complex", explanation: "'Unless' introduces a dependent clause." },
+];
+
+let quizQuestions = [], qIndex = 0, qScore = 0;
+
+function startQuiz() {
+  document.getElementById('quiz-inner').style.display = '';
+  document.getElementById('quiz-result').classList.remove('show');
+  quizQuestions = shuffleArr(quizData).slice(0, 10);
+  qIndex = qScore = 0;
+  showQuestion();
+}
+
+function showQuestion() {
+  const q = quizQuestions[qIndex];
+  document.getElementById('quiz-progress').textContent = `Question ${qIndex+1} of ${quizQuestions.length}`;
+  document.getElementById('quiz-bar').style.width = `${((qIndex+1)/quizQuestions.length)*100}%`;
+  document.getElementById('quiz-sent').textContent = `"${q.sentence}"`;
+  document.getElementById('quiz-exp').className = 'quiz-explanation';
+  document.getElementById('next-btn').className = 'next-btn';
+  const opts = document.getElementById('quiz-opts');
+  opts.innerHTML = '';
+  ['Simple','Compound','Complex'].forEach(type => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-opt';
+    btn.textContent = type;
+    btn.onclick = () => answerQuiz(type, btn);
+    opts.appendChild(btn);
+  });
+}
+
+function answerQuiz(chosen, btn) {
+  const q = quizQuestions[qIndex];
+  document.querySelectorAll('.quiz-opt').forEach(b => b.disabled = true);
+  if (chosen === q.type) { btn.classList.add('correct'); qScore++; }
+  else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.quiz-opt').forEach(b => { if (b.textContent === q.type) b.classList.add('correct'); });
+  }
+  const exp = document.getElementById('quiz-exp');
+  exp.textContent = q.explanation;
+  exp.classList.add('show');
+  document.getElementById('next-btn').classList.add('show');
+}
+
+function nextQuestion() {
+  qIndex++;
+  if (qIndex >= quizQuestions.length) showResult();
+  else showQuestion();
+}
+
+function showResult() {
+  document.getElementById('quiz-inner').style.display = 'none';
+  document.getElementById('quiz-result').classList.add('show');
+  const pct = qScore / quizQuestions.length;
+  document.getElementById('result-emoji').textContent  = pct === 1 ? '🏆' : pct >= .7 ? '🌟' : pct >= .5 ? '👍' : '💪';
+  document.getElementById('result-score').textContent  = `${qScore} / ${quizQuestions.length}`;
+  document.getElementById('result-msg').textContent    = pct === 1 ? 'Perfect score! You\'re a sentence expert!' : pct >= .7 ? 'Great work! Keep it up!' : pct >= .5 ? 'Good effort — revisit the Learn tab and try again.' : 'Keep practising — you\'ve got this!';
+}
+startQuiz();
+</script>
+</body>
+</html>
